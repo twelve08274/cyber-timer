@@ -215,95 +215,78 @@ function LofiSide({ primary, secondary }: { primary: string; secondary: string }
   )
 }
 
-// ---- Sakura: 上から枝が垂れて花びらが下に落ちる ----
+// ---- Sakura: 斜め1本枝＋丸い花の塊＋落ちる花びら ----
 function SakuraSide({ primary, secondary, side }: { primary: string; secondary: string; side: 'left'|'right' }) {
-  const anchorX = side === 'left' ? 55 : 45
+  // 左側：右上→左下方向、右側：左上→右下方向
+  const x1 = side === 'left' ? 110 : -10
+  const y1 = 5
+  const x2 = side === 'left' ? -10 : 110
+  const y2 = 75
 
-  // 枝先の座標（花びらの発生源）
-  const branchTips = [
-    { x: anchorX - 25, y: 28 },
-    { x: anchorX + 20, y: 22 },
-    { x: anchorX - 10, y: 38 },
-    { x: anchorX + 35, y: 35 },
-    { x: anchorX - 38, y: 42 },
-    { x: anchorX + 10, y: 48 },
-  ]
+  // 枝上の花の塊（t=0〜1で補間）
+  const clusters = [0.15, 0.32, 0.50, 0.65, 0.80].map(t => ({
+    x: x1 + (x2 - x1) * t,
+    y: y1 + (y2 - y1) * t,
+    r: 10 + Math.sin(t * 5) * 3,
+  }))
 
-  const petals = [
-    { tip:0, dx: -12, dur:4.0, delay:0.0 },
-    { tip:1, dx:  8,  dur:3.5, delay:0.7 },
-    { tip:2, dx: -8,  dur:4.5, delay:1.4 },
-    { tip:3, dx:  15, dur:3.8, delay:0.3 },
-    { tip:4, dx: -5,  dur:4.2, delay:2.1 },
-    { tip:5, dx:  10, dur:3.6, delay:1.0 },
-    { tip:0, dx:  6,  dur:4.8, delay:2.8 },
-    { tip:2, dx: -18, dur:3.3, delay:1.8 },
-    { tip:1, dx: -10, dur:4.1, delay:3.2 },
-  ]
+  // 花びら発生源（各クラスターから）
+  const petals = clusters.flatMap((c, ci) => [
+    { x: c.x, y: c.y, dx: -15 - ci*3, dur: 3.5 + ci*0.4, delay: ci*0.6 },
+    { x: c.x, y: c.y, dx:  10 + ci*2, dur: 4.0 + ci*0.3, delay: ci*0.6 + 1.2 },
+  ])
 
   return (
     <div style={{ width:'100%', height:'100%', position:'relative', overflow:'hidden' }}>
-
-      {/* 枝（上から垂れ下がる） */}
-      <svg style={{ position:'absolute', top:0, left:0, width:'100%', height:'55%' }} viewBox="0 0 100 100" fill="none">
-        {/* 幹（上辺から生える） */}
-        <path d={`M${anchorX} 0 Q${anchorX-2} 20 ${anchorX} 35`}
-          stroke={secondary} strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.5"/>
-        {/* 枝 */}
-        <path d={`M${anchorX} 20 Q${anchorX-22} 28 ${anchorX-25} 42`}
-          stroke={secondary} strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.4"/>
-        <path d={`M${anchorX} 18 Q${anchorX+18} 24 ${anchorX+20} 38`}
-          stroke={secondary} strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.4"/>
-        <path d={`M${anchorX} 28 Q${anchorX-8} 36 ${anchorX-10} 52`}
-          stroke={secondary} strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.35"/>
-        <path d={`M${anchorX} 26 Q${anchorX+10} 38 ${anchorX+10} 52`}
-          stroke={secondary} strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.35"/>
-        <path d={`M${anchorX-12} 32 Q${anchorX-30} 38 ${anchorX-38} 52`}
-          stroke={secondary} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.3"/>
-        <path d={`M${anchorX+10} 30 Q${anchorX+28} 36 ${anchorX+35} 48`}
-          stroke={secondary} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.3"/>
-
-        {/* 枝先の花の塊 */}
-        {branchTips.map(({ x, y }, i) => (
+      <svg style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%' }} viewBox="0 0 100 100" fill="none" preserveAspectRatio="none">
+        {/* メインの枝 */}
+        <path
+          d={`M${x1} ${y1} Q${(x1+x2)/2 + (side==='left'?-8:8)} ${(y1+y2)/2 - 5} ${x2} ${y2}`}
+          stroke={secondary} strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.55"
+        />
+        {/* 小枝（各クラスターから短く伸びる） */}
+        {clusters.map((c, i) => (
           <g key={i}>
-            <circle cx={x} cy={y} r={10 - i%2*2} fill={primary} opacity="0.18"/>
+            <path
+              d={`M${c.x} ${c.y} Q${c.x + (i%2===0?8:-8)} ${c.y - 10} ${c.x + (i%2===0?14:-14)} ${c.y - 18}`}
+              stroke={secondary} strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.4"
+            />
+            {/* 花の塊（丸いシルエット） */}
+            <circle cx={c.x + (i%2===0?14:-14)} cy={c.y - 18} r={c.r} fill={primary} opacity="0.12"/>
+            {/* 花びら5枚 */}
             {[0,72,144,216,288].map(a => {
-              const r2 = 6 - i%2
-              const px = x + r2 * Math.cos(a * Math.PI/180)
-              const py = y + r2 * Math.sin(a * Math.PI/180)
+              const pr = c.r * 0.6
+              const px = (c.x + (i%2===0?14:-14)) + pr * Math.cos(a * Math.PI/180)
+              const py = (c.y - 18) + pr * Math.sin(a * Math.PI/180)
               return <ellipse key={a} cx={px} cy={py} rx="3.5" ry="2.5"
                 fill={primary} opacity="0.6" transform={`rotate(${a} ${px} ${py})`}/>
             })}
-            <circle cx={x} cy={y} r="2" fill={secondary} opacity="0.7"/>
+            <circle cx={c.x + (i%2===0?14:-14)} cy={c.y - 18} r="2" fill={secondary} opacity="0.8"/>
           </g>
         ))}
       </svg>
 
-      {/* 花びら：枝先から下へ落下 */}
-      {petals.map((p, i) => {
-        const tip = branchTips[p.tip]
-        const startX = tip.x + '%'
-        return (
-          <motion.div key={i}
-            style={{
-              position:'absolute',
-              left: `${tip.x}%`,
-              top: `${tip.y * 0.55}%`,   // SVG座標をpx%に換算（height=55%）
-              width: 7 + i%3*2,
-              height: 5 + i%2,
-              background: primary,
-              borderRadius:'50% 0 50% 0',
-            }}
-            animate={{
-              y: ['0px', '500px'],
-              x: [0, p.dx * 6, p.dx * 3],
-              rotate: [0, (i%2===0?1:-1)*300],
-              opacity: [0.8, 0.6, 0],
-            }}
-            transition={{ duration: p.dur, repeat: Infinity, delay: p.delay, ease: 'easeIn' }}
-          />
-        )
-      })}
+      {/* 花びら：各クラスターから下へ */}
+      {petals.map((p, i) => (
+        <motion.div key={i}
+          style={{
+            position:'absolute',
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: 7 + i%3*2,
+            height: 5 + i%2,
+            background: primary,
+            borderRadius: '50% 0 50% 0',
+          }}
+          animate={{
+            y: ['0px', '450px'],
+            x: [0, p.dx * 4, p.dx * 2],
+            rotate: [0, (i%2===0 ? 1:-1) * 320],
+            opacity: [0.8, 0.5, 0],
+          }}
+          transition={{ duration: p.dur, repeat: Infinity, delay: p.delay, ease: 'easeIn' }}
+        />
+      ))}
     </div>
   )
 }
