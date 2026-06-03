@@ -13,15 +13,18 @@ import { useTimer, registerCompletionSetter, type CompletionState } from './hook
 import { useKeyboard } from './hooks/useKeyboard'
 import { usePlaylistStore } from './stores/playlistStore'
 import { useThemeStore } from './stores/themeStore'
+import { ThemeIllustration } from './components/Theme/ThemeIllustration'
 import './App.css'
 
 // Tauri window icon switching (no-op in browser)
 async function setWindowIcon(themeId: string) {
   try {
+    const res = await fetch(`/icons/${themeId}.png`)
+    if (!res.ok) return
+    const buf = await res.arrayBuffer()
     const { getCurrentWindow } = await import('@tauri-apps/api/window')
     const { Image } = await import('@tauri-apps/api/image')
-    const base = window.location.origin
-    const img = await Image.fromUrl(`${base}/icons/${themeId}.png`)
+    const img = await Image.fromBytes(new Uint8Array(buf))
     await getCurrentWindow().setIcon(img)
   } catch {}
 }
@@ -160,6 +163,9 @@ function App() {
               {/* 統計 */}
               <TodayStats />
               <WeeklyChart />
+
+              {/* テーマイラスト */}
+              <ThemeIllustration />
 
               {/* BGM */}
               <BGMPlayer />
