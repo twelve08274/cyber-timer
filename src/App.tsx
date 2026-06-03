@@ -14,6 +14,7 @@ import { useKeyboard } from './hooks/useKeyboard'
 import { usePlaylistStore } from './stores/playlistStore'
 import { useThemeStore } from './stores/themeStore'
 import { ThemeIllustration } from './components/Theme/ThemeIllustration'
+import { SideEffect } from './components/Theme/SideEffects'
 import './App.css'
 
 // Tauri window icon switching (no-op in browser)
@@ -65,9 +66,15 @@ function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            style={{ padding: '24px' }}
+            style={{ display: 'flex', minHeight: '100vh' }}
           >
-            <div style={{ maxWidth: 500, margin: '0 auto' }}>
+            {/* 左サイドパネル */}
+            <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+              <SideEffect side="left" />
+            </div>
+
+            {/* メインコンテンツ */}
+            <div style={{ width: 500, flexShrink: 0, padding: '24px 16px' }}>
               {/* ヘッダー */}
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
                 <div>
@@ -184,6 +191,11 @@ function App() {
               }}>
                 Space: 開始/停止 &nbsp;·&nbsp; R: リセット &nbsp;·&nbsp; S: スキップ &nbsp;·&nbsp; ⚙️: 設定
               </div>
+            </div>
+
+            {/* 右サイドパネル */}
+            <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+              <SideEffect side="right" />
             </div>
           </motion.div>
         )}
