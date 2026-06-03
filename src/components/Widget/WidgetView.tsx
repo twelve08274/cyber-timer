@@ -64,7 +64,7 @@ export function WidgetView() {
       style={{
         width: '100vw',
         height: '100vh',
-        background: `${theme.cardBg}e8`,
+        background: `${theme.cardBg}99`,
         backdropFilter: 'blur(12px)',
         border: `1px solid ${color}44`,
         borderRadius: 16,
