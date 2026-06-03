@@ -9,7 +9,10 @@ import { YouTubePlayer } from './components/Audio/YouTubePlayer'
 import { CompletionOverlay } from './components/Effects/CompletionEffect'
 import { PlaylistManager } from './components/Playlist/PlaylistManager'
 import { useTimer, registerCompletionSetter, type CompletionState } from './hooks/useTimer'
+import { useKeyboard } from './hooks/useKeyboard'
 import { usePlaylistStore } from './stores/playlistStore'
+import { useThemeStore } from './stores/themeStore'
+import { ThemePicker } from './components/Theme/ThemePicker'
 import './App.css'
 
 type Page = 'timer' | 'playlist'
@@ -18,16 +21,18 @@ function App() {
   const [page, setPage] = useState<Page>('timer')
   const [completion, setCompletion] = useState<CompletionState>({ show: false, mode: 'focus' })
   const { playlists } = usePlaylistStore()
+  const theme = useThemeStore(s => s.theme)()
 
   useEffect(() => {
     registerCompletionSetter(setCompletion)
   }, [])
 
   useTimer()
+  useKeyboard()
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #0a0e1a 0%, #0d1530 60%, #160a2a 100%)',
+      background: theme.bg,
       minHeight: '100vh',
       fontFamily: 'system-ui, -apple-system, sans-serif',
       color: '#c8d8f0',
@@ -120,17 +125,20 @@ function App() {
               <BGMPlayer />
               <YouTubePlayer />
 
+              {/* テーマ */}
+              <ThemePicker />
+
               {/* フッター */}
               <div style={{
                 textAlign: 'center',
-                marginTop: 48,
-                paddingTop: 24,
+                marginTop: 24,
+                paddingTop: 16,
                 borderTop: '1px solid #1e2d50',
-                fontSize: 11,
+                fontSize: 10,
                 color: '#5a6a8a',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.06em',
               }}>
-                Phase 1 MVP — Vite + React + Zustand
+                <span style={{ opacity: 0.5 }}>Space: 開始/停止 &nbsp;·&nbsp; R: リセット &nbsp;·&nbsp; S: スキップ</span>
               </div>
             </div>
           </motion.div>

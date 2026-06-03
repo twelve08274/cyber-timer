@@ -1,5 +1,6 @@
 import { useAudioStore, type BGMTrack } from '../../stores/audioStore'
 import { motion, AnimatePresence } from 'framer-motion'
+import { AudioVisualizer } from './AudioVisualizer'
 
 const TRACK_ORDER: BGMTrack[] = ['lofi', 'rain', 'whitenoise', 'cafe', 'none']
 
@@ -104,6 +105,9 @@ export function BGMPlayer() {
           )
         })}
       </div>
+
+      {/* 音波ビジュアライザー */}
+      <AudioVisualizer />
 
       {/* ボリュームスライダー */}
       <AnimatePresence>

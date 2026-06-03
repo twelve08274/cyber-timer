@@ -24,6 +24,7 @@ let procNodes: AudioNode[] = []
 function getCtx(): AudioContext {
   if (!audioCtx || audioCtx.state === 'closed') {
     audioCtx = new AudioContext()
+    ;(window as Window & { __cyberAudioCtx?: AudioContext }).__cyberAudioCtx = audioCtx
   }
   return audioCtx
 }
