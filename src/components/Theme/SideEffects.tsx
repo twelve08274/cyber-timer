@@ -215,94 +215,92 @@ function LofiSide({ primary, secondary }: { primary: string; secondary: string }
   )
 }
 
-// ---- Sakura: 横枝＋垂れ下がる小枝＋密な花の塊 ----
+// ---- Sakura: ThemeIllustrationと同じ枝を上下2本配置 ----
+function SakuraBranch({ p, s, flip }: { p: string; s: string; flip: boolean }) {
+  // ThemeIllustrationのSakuraと同じSVG（viewBox 200x80）
+  // flip=trueのとき左右反転
+  const transform = flip ? 'scale(-1,1) translate(-200,0)' : undefined
+  const flowerPositions = [
+    [70,38],[85,30],[100,24],[115,20],[130,18],[145,25],[160,22],
+    [75,48],[95,42],[110,50],
+  ] as [number,number][]
+  const centerDots = [[70,38],[100,24],[145,25],[110,50]] as [number,number][]
+  const scatteredPetals = [[30,30],[50,45],[175,45],[185,60]] as [number,number][]
+  return (
+    <svg viewBox="0 0 200 80" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width:'100%', height:'100%' }}>
+      <g transform={transform}>
+        {/* 枝 */}
+        <path d="M10 80 Q50 60 80 40 Q100 28 130 20" stroke={s} strokeWidth="2" strokeOpacity="0.4" fill="none" strokeLinecap="round"/>
+        <path d="M80 40 Q90 50 110 55" stroke={s} strokeWidth="1.5" strokeOpacity="0.3" fill="none"/>
+        <path d="M130 20 Q145 30 160 25 Q175 20 185 10" stroke={s} strokeWidth="1.5" strokeOpacity="0.3" fill="none"/>
+        {/* 花びら群 */}
+        {flowerPositions.map(([cx,cy],i) =>
+          [0,72,144,216,288].map(a => (
+            <ellipse key={`${i}-${a}`}
+              cx={cx + 8*Math.cos(a*Math.PI/180)}
+              cy={cy + 8*Math.sin(a*Math.PI/180)}
+              rx="4" ry="2.5"
+              fill={p} fillOpacity={0.4 + (i%3)*0.1}
+              transform={`rotate(${a} ${cx + 8*Math.cos(a*Math.PI/180)} ${cy + 8*Math.sin(a*Math.PI/180)})`}
+            />
+          ))
+        )}
+        {/* 花中心 */}
+        {centerDots.map(([cx,cy],i) => (
+          <circle key={i} cx={cx} cy={cy} r="2" fill={s} fillOpacity="0.7"/>
+        ))}
+        {/* 散る花びら */}
+        {scatteredPetals.map(([cx,cy],i) => (
+          <ellipse key={i} cx={cx} cy={cy} rx="3" ry="2" fill={p} fillOpacity="0.3"
+            transform={`rotate(${i*30} ${cx} ${cy})`}/>
+        ))}
+      </g>
+    </svg>
+  )
+}
+
 function SakuraSide({ primary, secondary, side }: { primary: string; secondary: string; side: 'left'|'right' }) {
-  const R = side === 'right'
+  const flip = side === 'left' // 左パネルは反転（右から左へ枝が伸びる）
 
-  // 花クラスター描画ヘルパー（中心cx,cy・半径r・密度）
-  function flowerCluster(cx: number, cy: number, r: number, op = 0.65) {
-    const offsets = [
-      [0,0,r*0.55],[r*0.5,-r*0.3,r*0.45],[- r*0.5,-r*0.2,r*0.4],
-      [r*0.3,r*0.5,r*0.4],[-r*0.4,r*0.4,r*0.38],[r*0.7,r*0.2,r*0.35],
-      [-r*0.6,r*0.1,r*0.32],[r*0.1,-r*0.6,r*0.38],[-r*0.2,r*0.7,r*0.3],
-    ]
-    return offsets.map(([dx,dy,pr], i) => (
-      <circle key={i} cx={cx+dx} cy={cy+dy} r={pr}
-        fill={primary} opacity={op - i*0.03} />
-    ))
-  }
-
-  // 垂れ枝の定義（メイン枝上の起点 sx,sy → 先端 ex,ey）
-  const hangBranches = R ? [
-    { sx:15,sy:12, ex:10,ey:38, clusters:[{cx:8, cy:44,r:9},{cx:16,cy:52,r:7}] },
-    { sx:35,sy:10, ex:28,ey:42, clusters:[{cx:24,cy:48,r:10},{cx:34,cy:56,r:8},{cx:18,cy:58,r:7}] },
-    { sx:55,sy:12, ex:50,ey:50, clusters:[{cx:46,cy:56,r:9},{cx:58,cy:62,r:8},{cx:40,cy:64,r:6}] },
-    { sx:75,sy:15, ex:70,ey:55, clusters:[{cx:66,cy:60,r:8},{cx:76,cy:66,r:7}] },
-  ] : [
-    { sx:85,sy:12, ex:90,ey:38, clusters:[{cx:92,cy:44,r:9},{cx:84,cy:52,r:7}] },
-    { sx:65,sy:10, ex:72,ey:42, clusters:[{cx:76,cy:48,r:10},{cx:66,cy:56,r:8},{cx:82,cy:58,r:7}] },
-    { sx:45,sy:12, ex:50,ey:50, clusters:[{cx:54,cy:56,r:9},{cx:42,cy:62,r:8},{cx:60,cy:64,r:6}] },
-    { sx:25,sy:15, ex:30,ey:55, clusters:[{cx:34,cy:60,r:8},{cx:24,cy:66,r:7}] },
+  // 花びら発生源（花の位置に合わせて）
+  const petalSources = [
+    { x:35, y:40 }, { x:50, y:25 }, { x:72, y:20 }, { x:57, y:35 },
+    { x:80, y:30 }, { x:47, y:48 },
   ]
 
-  // 落下花びら（各クラスターの中心から）
-  const petals = hangBranches.flatMap((b, bi) =>
-    b.clusters.flatMap((c, ci) => [
-      { x: c.cx, y: c.cy + c.r * 0.8, dx: R ? 8+ci*5 : -8-ci*5, dur: 4+bi*0.5+ci*0.4, delay: bi*0.8+ci*1.2 },
-      { x: c.cx, y: c.cy + c.r * 0.5, dx: R ? -5-bi  :  5+bi,   dur: 3.6+bi*0.4,       delay: bi*0.8+ci*1.2+2 },
-    ])
-  )
+  const petals = petalSources.flatMap((src, i) => [
+    { x: src.x, y: src.y, dx: (i%2===0?-1:1)*(6+i*2), dur: 3.5+i*0.4, delay: i*0.7,     top: '15%' },
+    { x: src.x, y: src.y, dx: (i%2===0?1:-1)*(4+i),   dur: 4.0+i*0.3, delay: i*0.7+1.8, top: '62%' },
+  ])
 
   return (
     <div style={{ width:'100%', height:'100%', position:'relative', overflow:'hidden' }}>
-      <svg style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%' }}
-        viewBox="0 0 100 100" fill="none" preserveAspectRatio="xMidYMid meet">
+      {/* 上の枝（画面上部15%あたり） */}
+      <div style={{ position:'absolute', top:'5%', left:0, width:'100%', height:'22%' }}>
+        <SakuraBranch p={primary} s={secondary} flip={flip} />
+      </div>
+      {/* 下の枝（画面下部50%あたり） */}
+      <div style={{ position:'absolute', top:'52%', left:0, width:'100%', height:'22%' }}>
+        <SakuraBranch p={primary} s={secondary} flip={flip} />
+      </div>
 
-        {/* メイン横枝 */}
-        <path
-          d={ R
-            ? `M 105 18 Q 70 14 45 12 Q 20 10 -5 8`
-            : `M -5 18 Q 30 14 55 12 Q 80 10 105 8`
-          }
-          stroke={secondary} strokeWidth="3.5" strokeLinecap="round" fill="none" opacity="0.55"/>
-
-        {/* 垂れ枝＋クラスター */}
-        {hangBranches.map((b, i) => (
-          <g key={i}>
-            {/* 垂れ枝本体 */}
-            <path d={`M${b.sx} ${b.sy} Q${b.sx+(R?-4:4)} ${(b.sy+b.ey)/2} ${b.ex} ${b.ey}`}
-              stroke={secondary} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.45"/>
-            {/* クラスターへの細枝 */}
-            {b.clusters.map((c, ci) => (
-              <path key={ci}
-                d={`M${b.ex} ${b.ey} Q${(b.ex+c.cx)/2} ${(b.ey+c.cy)/2-3} ${c.cx} ${c.cy}`}
-                stroke={secondary} strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.35"/>
-            ))}
-            {/* 花クラスター */}
-            {b.clusters.map((c, ci) => (
-              <g key={`fl-${ci}`}>{flowerCluster(c.cx, c.cy, c.r)}</g>
-            ))}
-          </g>
-        ))}
-      </svg>
-
-      {/* 落下花びら */}
+      {/* 落下花びら（両枝から） */}
       {petals.map((p, i) => (
         <motion.div key={i}
           style={{
             position: 'absolute',
             left: `${p.x}%`,
-            top:  `${p.y}%`,
-            width: 6, height: 5,
+            top: p.top,
+            width: 6, height: 4,
             background: primary,
             borderRadius: '60% 0 60% 0',
-            opacity: 0.8,
           }}
           animate={{
-            y: ['0px', '320px'],
-            x: [0, p.dx * 10, p.dx * 5],
-            rotate: [0, (i%2===0?1:-1) * 260],
-            opacity: [0.8, 0.5, 0],
+            y: ['0px', '280px'],
+            x: [0, p.dx * 14, p.dx * 7],
+            rotate: [0, (i%2===0?1:-1) * 280],
+            opacity: [0.75, 0.45, 0],
           }}
           transition={{ duration: p.dur, repeat: Infinity, delay: p.delay, ease: 'easeIn' }}
         />
