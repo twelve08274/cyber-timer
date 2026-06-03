@@ -8,41 +8,95 @@ import { BGMPlayer } from './components/Audio/BGMPlayer'
 import { YouTubePlayer } from './components/Audio/YouTubePlayer'
 import { CompletionOverlay } from './components/Effects/CompletionEffect'
 import { PlaylistManager } from './components/Playlist/PlaylistManager'
+import { SettingsPage } from './components/Settings/SettingsPage'
 import { useTimer, registerCompletionSetter, type CompletionState } from './hooks/useTimer'
+import { useKeyboard } from './hooks/useKeyboard'
 import { usePlaylistStore } from './stores/playlistStore'
+import { useThemeStore } from './stores/themeStore'
+import { ThemeIllustration } from './components/Theme/ThemeIllustration'
+import { SideEffect } from './components/Theme/SideEffects'
 import './App.css'
 
-type Page = 'timer' | 'playlist'
+// ウィジェット窓を開く
+async function openWidget() {
+  try {
+    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
+    const existing = await WebviewWindow.getByLabel('widget')
+    if (existing) { await existing.setFocus(); return }
+    new WebviewWindow('widget', {
+      url: '/?widget',
+      title: 'Cyber Timer Widget',
+      width: 260,
+      height: 120,
+      minWidth: 260,
+      minHeight: 120,
+      alwaysOnTop: true,
+      decorations: false,
+      transparent: true,
+      resizable: false,
+      skipTaskbar: true,
+    })
+  } catch (e) { console.warn('widget:', e) }
+}
+
+// Tauri window icon switching (no-op in browser)
+async function setWindowIcon(themeId: string) {
+  try {
+    const res = await fetch(`/icons/${themeId}.png`)
+    if (!res.ok) return
+    const buf = await res.arrayBuffer()
+    const { getCurrentWindow } = await import('@tauri-apps/api/window')
+    const { Image } = await import('@tauri-apps/api/image')
+    const img = await Image.fromBytes(new Uint8Array(buf))
+    await getCurrentWindow().setIcon(img)
+  } catch {}
+}
+
+type Page = 'timer' | 'playlist' | 'settings'
 
 function App() {
   const [page, setPage] = useState<Page>('timer')
   const [completion, setCompletion] = useState<CompletionState>({ show: false, mode: 'focus' })
   const { playlists } = usePlaylistStore()
+  const { themeId, theme } = useThemeStore()
+  const t = theme()
 
   useEffect(() => {
     registerCompletionSetter(setCompletion)
   }, [])
 
+  // テーマ変更時にウィンドウアイコンを切替
+  useEffect(() => {
+    setWindowIcon(themeId)
+  }, [themeId])
+
   useTimer()
+  useKeyboard()
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #0a0e1a 0%, #0d1530 60%, #160a2a 100%)',
+      background: t.bg,
       minHeight: '100vh',
       fontFamily: 'system-ui, -apple-system, sans-serif',
       color: '#c8d8f0',
     }}>
       <AnimatePresence mode="wait">
-        {page === 'timer' ? (
+        {page === 'timer' && (
           <motion.div
             key="timer"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            style={{ padding: '24px 24px' }}
+            style={{ display: 'flex', minHeight: '100vh' }}
           >
-            <div style={{ maxWidth: 500, margin: '0 auto' }}>
+            {/* 左サイドパネル */}
+            <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+              <SideEffect side="left" />
+            </div>
+
+            {/* メインコンテンツ */}
+            <div style={{ width: 500, flexShrink: 0, padding: '24px 16px' }}>
               {/* ヘッダー */}
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
                 <div>
@@ -53,59 +107,100 @@ function App() {
                     lineHeight: 1.4,
                     margin: '0 0 4px 0',
                     padding: '4px 0 0 0',
-                    background: 'linear-gradient(90deg, #00f5ff, #bf00ff)',
+                    background: `linear-gradient(90deg, ${t.primary}, ${t.secondary})`,
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                   }}>
                     ⏱ Cyber Timer
                   </h1>
-                  <p style={{ color: '#5a6a8a', fontSize: 12, margin: 0 }}>
+                  <p style={{ color: t.textDim, fontSize: 12, margin: 0 }}>
                     テンション爆上げ集中タイマー
                   </p>
                 </div>
 
-                {/* プレイリストボタン */}
-                <button
-                  onClick={() => setPage('playlist')}
-                  style={{
-                    padding: '7px 14px',
-                    borderRadius: 8,
-                    border: '1px solid #1e2d50',
-                    background: 'rgba(255,255,255,0.03)',
-                    color: '#5a6a8a',
-                    fontSize: 12,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    marginTop: 4,
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = '#ff2d78'
-                    e.currentTarget.style.color = '#ff2d78'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = '#1e2d50'
-                    e.currentTarget.style.color = '#5a6a8a'
-                  }}
-                >
-                  🎵
-                  <span>プレイリスト</span>
-                  {playlists.length > 0 && (
-                    <span style={{
-                      background: '#ff2d78',
-                      color: '#fff',
-                      borderRadius: 10,
-                      padding: '0 6px',
-                      fontSize: 10,
-                      fontWeight: 700,
-                    }}>
-                      {playlists.length}
-                    </span>
-                  )}
-                </button>
+                {/* ヘッダーボタン群 */}
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button
+                    onClick={openWidget}
+                    title="ウィジェットを開く"
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${t.border}`,
+                      background: 'rgba(255,255,255,0.03)',
+                      color: t.textDim,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = t.primary; e.currentTarget.style.color = t.primary }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = t.border;  e.currentTarget.style.color = t.textDim }}
+                  >
+                    🪟
+                  </button>
+                  <button
+                    onClick={() => setPage('playlist')}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${t.border}`,
+                      background: 'rgba(255,255,255,0.03)',
+                      color: t.textDim,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = t.accent
+                      e.currentTarget.style.color = t.accent
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = t.border
+                      e.currentTarget.style.color = t.textDim
+                    }}
+                  >
+                    🎵
+                    {playlists.length > 0 && (
+                      <span style={{
+                        background: t.accent,
+                        color: '#fff',
+                        borderRadius: 10,
+                        padding: '0 5px',
+                        fontSize: 10,
+                        fontWeight: 700,
+                      }}>
+                        {playlists.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setPage('settings')}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${t.border}`,
+                      background: 'rgba(255,255,255,0.03)',
+                      color: t.textDim,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = t.primary
+                      e.currentTarget.style.color = t.primary
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = t.border
+                      e.currentTarget.style.color = t.textDim
+                    }}
+                  >
+                    ⚙️
+                  </button>
+                </div>
               </div>
 
               {/* タイマー */}
@@ -116,6 +211,9 @@ function App() {
               <TodayStats />
               <WeeklyChart />
 
+              {/* テーマイラスト */}
+              <ThemeIllustration />
+
               {/* BGM */}
               <BGMPlayer />
               <YouTubePlayer />
@@ -123,18 +221,26 @@ function App() {
               {/* フッター */}
               <div style={{
                 textAlign: 'center',
-                marginTop: 48,
-                paddingTop: 24,
-                borderTop: '1px solid #1e2d50',
-                fontSize: 11,
-                color: '#5a6a8a',
-                letterSpacing: '0.08em',
+                marginTop: 24,
+                paddingTop: 16,
+                borderTop: `1px solid ${t.border}`,
+                fontSize: 10,
+                color: t.textDim,
+                letterSpacing: '0.06em',
+                opacity: 0.6,
               }}>
-                Phase 1 MVP — Vite + React + Zustand
+                Space: 開始/停止 &nbsp;·&nbsp; R: リセット &nbsp;·&nbsp; S: スキップ &nbsp;·&nbsp; ⚙️: 設定
               </div>
             </div>
+
+            {/* 右サイドパネル */}
+            <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+              <SideEffect side="right" />
+            </div>
           </motion.div>
-        ) : (
+        )}
+
+        {page === 'playlist' && (
           <motion.div
             key="playlist"
             initial={{ opacity: 0 }}
@@ -144,6 +250,10 @@ function App() {
           >
             <PlaylistManager onClose={() => setPage('timer')} />
           </motion.div>
+        )}
+
+        {page === 'settings' && (
+          <SettingsPage onClose={() => setPage('timer')} />
         )}
       </AnimatePresence>
 

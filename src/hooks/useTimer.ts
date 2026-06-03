@@ -4,6 +4,21 @@ import { useStatsStore } from '../stores/statsStore'
 import { playFocusComplete, playBreakEnd } from './useSound'
 import { useCompletionEffect } from '../components/Effects/CompletionEffect'
 import type { TimerMode } from '../stores/timerStore'
+import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
+import { useAudioStore } from '../stores/audioStore'
+
+async function notify(title: string, body: string) {
+  try {
+    let granted = await isPermissionGranted()
+    if (!granted) {
+      const perm = await requestPermission()
+      granted = perm === 'granted'
+    }
+    if (granted) sendNotification({ title, body })
+  } catch {
+    // ブラウザ環境などTauri外では無視
+  }
+}
 
 // 完了エフェクトの状態をグローバルに持つ（App.tsxから参照できるよう export）
 export type CompletionState = { show: boolean; mode: TimerMode }
@@ -18,16 +33,25 @@ export function useTimer() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const prevMode = useRef(mode)
   const { fire } = useCompletionEffect()
+  const { track, setTrack } = useAudioStore()
+  const focusTrackRef = useRef(track)
 
   useEffect(() => {
     // フォーカス完了 → ブレイク開始
     if (prevMode.current === 'focus' && mode !== 'focus') {
-      const { focusDuration } = useTimerStore.getState()
+      const { focusDuration, session } = useTimerStore.getState()
       addFocusTime(focusDuration * 60)
       playFocusComplete()
       fire('focus')
       _setCompletion?.({ show: true, mode: 'focus' })
       setTimeout(() => _setCompletion?.({ show: false, mode: 'focus' }), 2000)
+      const breakLabel = mode === 'longBreak' ? '長め休憩' : '休憩'
+      notify('⏱ フォーカス完了！', `セッション ${session} 終了 — ${breakLabel}タイムです`)
+      // BGM自動切替: フォーカス中のトラックを記憶して雨音へ
+      if (track !== 'none') {
+        focusTrackRef.current = track
+        setTrack('rain')
+      }
     }
     // ブレイク完了 → フォーカス開始
     if ((prevMode.current === 'break' || prevMode.current === 'longBreak') && mode === 'focus') {
@@ -35,6 +59,11 @@ export function useTimer() {
       fire(prevMode.current)
       _setCompletion?.({ show: true, mode: prevMode.current })
       setTimeout(() => _setCompletion?.({ show: false, mode: prevMode.current }), 2000)
+      notify('☕ 休憩終了！', 'さあ、次のフォーカスセッションを始めましょう')
+      // BGM自動切替: フォーカス中のトラックに戻す
+      if (focusTrackRef.current !== 'none') {
+        setTrack(focusTrackRef.current)
+      }
     }
     prevMode.current = mode
   }, [mode, addFocusTime])
