@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Cyber Timer",
         "width": 560,
         "height": 900,

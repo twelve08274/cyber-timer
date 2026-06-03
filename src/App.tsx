@@ -17,6 +17,28 @@ import { ThemeIllustration } from './components/Theme/ThemeIllustration'
 import { SideEffect } from './components/Theme/SideEffects'
 import './App.css'
 
+// ウィジェット窓を開く
+async function openWidget() {
+  try {
+    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
+    const existing = await WebviewWindow.getByLabel('widget')
+    if (existing) { await existing.setFocus(); return }
+    new WebviewWindow('widget', {
+      url: '/?widget',
+      title: 'Cyber Timer Widget',
+      width: 220,
+      height: 110,
+      minWidth: 180,
+      minHeight: 90,
+      alwaysOnTop: true,
+      decorations: false,
+      transparent: true,
+      resizable: false,
+      skipTaskbar: true,
+    })
+  } catch (e) { console.warn('widget:', e) }
+}
+
 // Tauri window icon switching (no-op in browser)
 async function setWindowIcon(themeId: string) {
   try {
@@ -99,6 +121,24 @@ function App() {
 
                 {/* ヘッダーボタン群 */}
                 <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button
+                    onClick={openWidget}
+                    title="ウィジェットを開く"
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${t.border}`,
+                      background: 'rgba(255,255,255,0.03)',
+                      color: t.textDim,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = t.primary; e.currentTarget.style.color = t.primary }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = t.border;  e.currentTarget.style.color = t.textDim }}
+                  >
+                    🪟
+                  </button>
                   <button
                     onClick={() => setPage('playlist')}
                     style={{
