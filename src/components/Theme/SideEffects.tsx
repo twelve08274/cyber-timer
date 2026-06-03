@@ -217,23 +217,21 @@ function LofiSide({ primary, secondary }: { primary: string; secondary: string }
 
 // ---- Sakura: 自然な斜め枝＋小さい花＋花びら落下 ----
 function SakuraSide({ primary, secondary, side }: { primary: string; secondary: string; side: 'left'|'right' }) {
-  // 左：右上隅から左下へ、右：左上隅から右下へ
   const flip = side === 'right'
 
-  // 枝の花の位置（SVG 100x100座標）
+  // 枝：上端から下端まで斜めに通す
   const flowers = flip
-    ? [ {x:8,y:18}, {x:22,y:32}, {x:38,y:44}, {x:55,y:55}, {x:70,y:66} ]
-    : [ {x:92,y:18}, {x:78,y:32}, {x:62,y:44}, {x:45,y:55}, {x:30,y:66} ]
+    ? [ {x:8,y:5}, {x:20,y:18}, {x:33,y:30}, {x:46,y:42}, {x:58,y:55}, {x:70,y:68}, {x:80,y:80} ]
+    : [ {x:92,y:5}, {x:80,y:18}, {x:67,y:30}, {x:54,y:42}, {x:42,y:55}, {x:30,y:68}, {x:20,y:80} ]
 
-  // 花びら落下（各花から）
   const petals = flowers.flatMap((f, fi) => [
-    { sx: f.x, sy: f.y, dx: -8 - fi,   dur: 3.8 + fi*0.3, delay: fi*0.7 },
-    { sx: f.x, sy: f.y, dx:  6 + fi*2, dur: 4.2 + fi*0.2, delay: fi*0.7 + 1.5 },
+    { sx: f.x, sy: f.y, dx: -6 - fi,   dur: 3.8 + fi*0.3, delay: fi*0.6 },
+    { sx: f.x, sy: f.y, dx:  5 + fi*2, dur: 4.2 + fi*0.2, delay: fi*0.6 + 1.4 },
   ])
 
   const mainPath = flip
-    ? `M -5 5 Q 20 30 38 50 Q 55 65 75 90`
-    : `M 105 5 Q 80 30 62 50 Q 45 65 25 90`
+    ? `M -5 -2 Q 20 22 38 42 Q 55 60 75 82 Q 85 90 95 100`
+    : `M 105 -2 Q 80 22 62 42 Q 45 60 25 82 Q 15 90 5 100`
 
   return (
     <div style={{ width:'100%', height:'100%', position:'relative', overflow:'hidden' }}>
