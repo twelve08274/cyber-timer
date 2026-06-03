@@ -26,6 +26,19 @@ export function WidgetView() {
   }
   const color = modeColors[mode] ?? theme.primary
 
+  // body/html を透過に
+  useEffect(() => {
+    document.documentElement.style.background = 'transparent'
+    document.body.style.background = 'transparent'
+    const root = document.getElementById('root')
+    if (root) {
+      root.style.background = 'transparent'
+      root.style.border = 'none'
+      root.style.width = '100%'
+      root.style.maxWidth = '100%'
+    }
+  }, [])
+
   // ドラッグで窓を移動
   const handleDragStart = async () => {
     try {
