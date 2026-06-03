@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useThemeStore, type ThemeId } from '../../stores/themeStore'
 
@@ -19,7 +18,7 @@ function CyberSide({ side, primary, secondary }: { side: 'left'|'right'; primary
               color: ri === 0 ? primary : secondary,
               opacity: ri === 0 ? 0.9 : 0.3 - ri * 0.05,
             }}
-            animate={{ y: ['0%', '110%'] }}
+            animate={{ y: ['10%', '110%'] }}
             transition={{
               duration: 3 + ci * 0.8,
               repeat: Infinity,
@@ -72,7 +71,7 @@ function MatrixSide({ primary }: { primary: string }) {
             flexDirection: 'column',
             gap: 2,
           }}
-          animate={{ y: ['-100%', '100%'] }}
+          animate={{ y: ['0%', '120%'] }}
           transition={{ duration: 4 + ci, repeat: Infinity, ease: 'linear', delay: ci * 1.5 }}
         >
           {Array.from({ length: 14 }, (_, i) => (
@@ -92,25 +91,96 @@ function MatrixSide({ primary }: { primary: string }) {
   )
 }
 
-// ---- Kawaii: 浮かぶ星と♡ ----
-function KawaiiSide({ primary, secondary, accent }: { primary: string; secondary: string; accent: string }) {
-  const items = ['★','♡','✦','◆','★','♡','✿']
+// ---- Kawaii: ポップなキャラとキラキラ ----
+function KawaiiSide({ side }: { side: 'left'|'right' }) {
+  const PINK = '#ff6eb4'
+  const CYAN = '#00f0ff'
+  const YEL  = '#ffe066'
+  const PUR  = '#c084fc'
+
+  // きらきらパーティクル (★ ♡ ✦ ◎)
+  const sparks = [
+    { x:15, sym:'★', c:CYAN,  size:14, dur:3.2, delay:0   },
+    { x:50, sym:'♡', c:PINK,  size:18, dur:2.8, delay:0.6 },
+    { x:80, sym:'✦', c:YEL,   size:11, dur:3.6, delay:1.2 },
+    { x:30, sym:'♡', c:PUR,   size:13, dur:4.0, delay:0.3 },
+    { x:70, sym:'★', c:PINK,  size:10, dur:3.0, delay:1.8 },
+    { x:55, sym:'◎', c:CYAN,  size:12, dur:2.6, delay:2.2 },
+    { x:10, sym:'✦', c:YEL,   size:9,  dur:3.8, delay:0.9 },
+    { x:88, sym:'♡', c:PUR,   size:15, dur:3.4, delay:1.5 },
+  ]
+
+  // キャラクターはサイドに1体ずつ (左右で向き変える)
+  const flip = side === 'right' ? 'scaleX(-1)' : undefined
+
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
-      {[10,35,60,80,20,55,75].map((x, i) => (
-        <motion.div
-          key={i}
-          style={{
-            position: 'absolute',
-            left: `${x}%`,
-            fontSize: 12 + (i % 3) * 4,
-            color: [primary, secondary, accent][i % 3],
-          }}
-          animate={{ y: ['100%', '-10%'], rotate: [0, 360], opacity: [0, 0.8, 0] }}
-          transition={{ duration: 5 + i * 0.7, repeat: Infinity, delay: i * 0.9, ease: 'easeInOut' }}
+    <div style={{ width:'100%', height:'100%', position:'relative', overflow:'hidden' }}>
+
+      {/* ── きらきら ── */}
+      {sparks.map((s, i) => (
+        <motion.div key={i}
+          style={{ position:'absolute', left:`${s.x}%`, top:'15%', fontSize:s.size, color:s.c, lineHeight:1, userSelect:'none' }}
+          animate={{ y:['0%','80%'], opacity:[0, 1, 1, 0], scale:[0.6,1.2,1,0.8], rotate:[0,20,-20,0] }}
+          transition={{ duration:s.dur, repeat:Infinity, delay:s.delay, ease:'easeInOut' }}
         >
-          {items[i]}
+          {s.sym}
         </motion.div>
+      ))}
+
+      {/* ── キャラクター本体 (SVG) ── */}
+      <motion.div
+        style={{ position:'absolute', bottom:'12%', left:'50%', marginLeft:-36, transform:flip }}
+        animate={{ y:[0,-8,0] }}
+        transition={{ duration:2.4, repeat:Infinity, ease:'easeInOut' }}
+      >
+        <svg width="72" height="88" viewBox="0 0 72 88" fill="none">
+          {/* 耳 */}
+          <ellipse cx="18" cy="26" rx="8" ry="11" fill={PINK} opacity="0.9"/>
+          <ellipse cx="18" cy="26" rx="5" ry="7"  fill="#fff" opacity="0.6"/>
+          <ellipse cx="54" cy="26" rx="8" ry="11" fill={PINK} opacity="0.9"/>
+          <ellipse cx="54" cy="26" rx="5" ry="7"  fill="#fff" opacity="0.6"/>
+          {/* 顔 */}
+          <circle cx="36" cy="36" r="24" fill={PINK} opacity="0.95"/>
+          <circle cx="36" cy="36" r="24" fill="url(#kFaceGrad)" opacity="0.3"/>
+          {/* 目 */}
+          <ellipse cx="27" cy="33" rx="5" ry="6" fill={CYAN}/>
+          <ellipse cx="45" cy="33" rx="5" ry="6" fill={CYAN}/>
+          <ellipse cx="28" cy="32" rx="2" ry="3" fill="#fff" opacity="0.7"/>
+          <ellipse cx="46" cy="32" rx="2" ry="3" fill="#fff" opacity="0.7"/>
+          <circle  cx="27" cy="34" r="2" fill="#1a0020"/>
+          <circle  cx="45" cy="34" r="2" fill="#1a0020"/>
+          {/* ほっぺ */}
+          <ellipse cx="21" cy="40" rx="6" ry="4" fill="#ff9fce" opacity="0.5"/>
+          <ellipse cx="51" cy="40" rx="6" ry="4" fill="#ff9fce" opacity="0.5"/>
+          {/* 口 */}
+          <path d="M29 44 Q36 50 43 44" stroke="#fff" strokeWidth="2" strokeLinecap="round" fill="none"/>
+          {/* リボン */}
+          <path d="M24 14 L36 20 L48 14 L36 10 Z" fill={CYAN} opacity="0.9"/>
+          <circle cx="36" cy="17" r="3" fill="#fff" opacity="0.8"/>
+          {/* 体 */}
+          <path d="M14 60 Q14 54 36 54 Q58 54 58 60 L54 86 Q36 90 18 86 Z" fill={PUR} opacity="0.85"/>
+          {/* 胸のハート */}
+          <path d="M32 66 Q32 62 36 64 Q40 62 40 66 Q40 70 36 74 Q32 70 32 66 Z" fill={PINK} opacity="0.7"/>
+          <defs>
+            <radialGradient id="kFaceGrad" cx="40%" cy="30%" r="60%">
+              <stop offset="0%" stopColor="#fff" stopOpacity="0.4"/>
+              <stop offset="100%" stopColor={PINK} stopOpacity="0"/>
+            </radialGradient>
+          </defs>
+        </svg>
+      </motion.div>
+
+      {/* ── 足元のポップな丸 ── */}
+      {[20,50,80].map((x,i) => (
+        <motion.div key={`dot-${i}`}
+          style={{
+            position:'absolute', bottom:'6%', left:`${x}%`,
+            width:8+i*3, height:8+i*3, borderRadius:'50%',
+            background:[CYAN,PINK,YEL][i], opacity:0.5,
+          }}
+          animate={{ scale:[1,1.4,1], opacity:[0.3,0.7,0.3] }}
+          transition={{ duration:1.5+i*0.4, repeat:Infinity, delay:i*0.5 }}
+        />
       ))}
     </div>
   )
@@ -137,7 +207,7 @@ function LofiSide({ primary, secondary }: { primary: string; secondary: string }
       {[15,35,55,75,90].map((x, i) => (
         <motion.div key={i}
           style={{ position: 'absolute', left: `${x}%`, width: 1.5, height: 8, background: primary, borderRadius: 1, opacity: 0.3 }}
-          animate={{ y: ['-5%', '105%'], opacity: [0, 0.4, 0] }}
+          animate={{ y: ['10%', '105%'], opacity: [0, 0.4, 0] }}
           transition={{ duration: 1.5 + i * 0.3, repeat: Infinity, delay: i * 0.4, ease: 'linear' }}
         />
       ))}
@@ -145,29 +215,77 @@ function LofiSide({ primary, secondary }: { primary: string; secondary: string }
   )
 }
 
-// ---- Sakura: 花びらが舞う ----
-function SakuraSide({ primary }: { primary: string }) {
-  const petals = [10,25,45,65,80,90,30,70]
+// ---- Sakura: 桜の木から花びらが散る ----
+function SakuraSide({ primary, secondary, side }: { primary: string; secondary: string; side: 'left'|'right' }) {
+  // 木はサイドの端寄りに配置
+  const treeX = side === 'left' ? 60 : 40
+
+  // 花びら：木の上部付近から散らばる
+  const petals = [
+    { ox:treeX-20, dur:3.5, delay:0   },
+    { ox:treeX+10, dur:4.2, delay:0.8 },
+    { ox:treeX-5,  dur:3.8, delay:1.6 },
+    { ox:treeX+25, dur:4.6, delay:0.4 },
+    { ox:treeX-30, dur:3.2, delay:2.0 },
+    { ox:treeX+5,  dur:5.0, delay:1.2 },
+    { ox:treeX-15, dur:4.0, delay:2.8 },
+    { ox:treeX+20, dur:3.6, delay:3.2 },
+  ]
+
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
-      {petals.map((x, i) => (
-        <motion.div
-          key={i}
+    <div style={{ width:'100%', height:'100%', position:'relative', overflow:'hidden' }}>
+
+      {/* 桜の木（幹＋枝） */}
+      <svg
+        style={{ position:'absolute', bottom:0, left:`${treeX-30}%`, width:'60%', height:'75%' }}
+        viewBox="0 0 100 200" fill="none"
+      >
+        {/* 幹 */}
+        <path d="M48 200 Q46 160 44 130 Q42 100 48 70" stroke={secondary} strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.5"/>
+        {/* 主枝 */}
+        <path d="M48 130 Q30 110 15 90"  stroke={secondary} strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.4"/>
+        <path d="M46 110 Q65 95 80 75"   stroke={secondary} strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.4"/>
+        <path d="M47 90  Q35 70 25 50"   stroke={secondary} strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.35"/>
+        <path d="M48 80  Q62 65 75 48"   stroke={secondary} strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.35"/>
+        <path d="M48 70  Q48 40 48 18"   stroke={secondary} strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.35"/>
+        {/* 花の塊 */}
+        {[
+          [15,85],[80,70],[25,45],[75,42],[48,14],[38,30],[60,28],
+        ].map(([cx,cy],i) => (
+          <g key={i}>
+            <circle cx={cx} cy={cy} r={14-i%3*2} fill={primary} opacity="0.2"/>
+            {[0,72,144,216,288].map(a => {
+              const r2 = 9-i%3
+              const px = cx + r2*Math.cos(a*Math.PI/180)
+              const py = cy + r2*Math.sin(a*Math.PI/180)
+              return <ellipse key={a} cx={px} cy={py} rx="4" ry="3" fill={primary} opacity="0.55"
+                transform={`rotate(${a} ${px} ${py})`}/>
+            })}
+            <circle cx={cx} cy={cy} r="2.5" fill={secondary} opacity="0.7"/>
+          </g>
+        ))}
+      </svg>
+
+      {/* 散る花びら（木の上部 = 約25%の高さから） */}
+      {petals.map((p, i) => (
+        <motion.div key={i}
           style={{
-            position: 'absolute',
-            left: `${x}%`,
-            width: 6 + (i % 3) * 2,
-            height: 4 + (i % 3),
+            position:'absolute',
+            left:`${Math.max(5, Math.min(90, p.ox))}%`,
+            top:'20%',
+            width: 7 + i%3*2,
+            height: 5 + i%3,
             background: primary,
-            borderRadius: '50% 0 50% 0',
-            opacity: 0.5,
+            borderRadius:'50% 0 50% 0',
+            opacity:0.7,
           }}
           animate={{
-            y: ['-5%', '105%'],
-            x: [0, (i % 2 === 0 ? 1 : -1) * 20],
-            rotate: [0, 360],
+            y: ['0%', '85%'],
+            x: [0, (i%2===0?1:-1)*(15+i*4)],
+            rotate: [0, (i%2===0?1:-1)*360],
+            opacity: [0.7, 0.5, 0],
           }}
-          transition={{ duration: 4 + i * 0.6, repeat: Infinity, delay: i * 0.7, ease: 'easeInOut' }}
+          transition={{ duration:p.dur, repeat:Infinity, delay:p.delay, ease:'easeIn' }}
         />
       ))}
     </div>
@@ -219,7 +337,7 @@ function ArcticSide({ primary }: { primary: string }) {
             opacity: 0.4,
             lineHeight: 1,
           }}
-          animate={{ y: ['-5%', '105%'], x: [0, (i%2===0?8:-8)], rotate: [0, 180] }}
+          animate={{ y: ['10%', '105%'], x: [0, (i%2===0?8:-8)], rotate: [0, 180] }}
           transition={{ duration: 5 + i * 0.6, repeat: Infinity, delay: i * 0.7, ease: 'linear' }}
         >
           ❄
@@ -274,7 +392,7 @@ function SynthwaveSide({ primary, secondary }: { primary: string; secondary: str
           position: 'absolute', left: 0, right: 0, height: 2,
           background: `linear-gradient(90deg, transparent, ${primary}60, transparent)`,
         }}
-        animate={{ y: ['-5%', '105%'] }}
+        animate={{ y: ['10%', '105%'] }}
         transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
       />
       {/* 星 */}
@@ -300,9 +418,9 @@ const SIDE_EFFECTS: Record<ThemeId, (colors: { p: string; s: string; a: string; 
   matrix:    ({ p }) => <MatrixSide primary={p} />,
   synthwave: ({ p, s }) => <SynthwaveSide primary={p} secondary={s} />,
   ghost:     ({ p, s }) => <GhostSide primary={p} secondary={s} />,
-  kawaii:    ({ p, s, a }) => <KawaiiSide primary={p} secondary={s} accent={a} />,
+  kawaii:    ({ side }) => <KawaiiSide side={side} />,
   lofi:      ({ p, s }) => <LofiSide primary={p} secondary={s} />,
-  sakura:    ({ p }) => <SakuraSide primary={p} />,
+  sakura:    ({ p, s, side }) => <SakuraSide primary={p} secondary={s} side={side} />,
   forest:    ({ p, s }) => <ForestSide primary={p} secondary={s} />,
   arctic:    ({ p }) => <ArcticSide primary={p} />,
 }
