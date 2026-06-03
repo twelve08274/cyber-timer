@@ -215,75 +215,94 @@ function LofiSide({ primary, secondary }: { primary: string; secondary: string }
   )
 }
 
-// ---- Sakura: 自然な斜め枝＋小さい花＋花びら落下 ----
+// ---- Sakura: 横枝＋垂れ下がる小枝＋密な花の塊 ----
 function SakuraSide({ primary, secondary, side }: { primary: string; secondary: string; side: 'left'|'right' }) {
-  const flip = side === 'right'
+  const R = side === 'right'
 
-  // 枝：上端から下端まで斜めに通す
-  const flowers = flip
-    ? [ {x:8,y:5}, {x:20,y:18}, {x:33,y:30}, {x:46,y:42}, {x:58,y:55}, {x:70,y:68}, {x:80,y:80} ]
-    : [ {x:92,y:5}, {x:80,y:18}, {x:67,y:30}, {x:54,y:42}, {x:42,y:55}, {x:30,y:68}, {x:20,y:80} ]
+  // 花クラスター描画ヘルパー（中心cx,cy・半径r・密度）
+  function flowerCluster(cx: number, cy: number, r: number, op = 0.65) {
+    const offsets = [
+      [0,0,r*0.55],[r*0.5,-r*0.3,r*0.45],[- r*0.5,-r*0.2,r*0.4],
+      [r*0.3,r*0.5,r*0.4],[-r*0.4,r*0.4,r*0.38],[r*0.7,r*0.2,r*0.35],
+      [-r*0.6,r*0.1,r*0.32],[r*0.1,-r*0.6,r*0.38],[-r*0.2,r*0.7,r*0.3],
+    ]
+    return offsets.map(([dx,dy,pr], i) => (
+      <circle key={i} cx={cx+dx} cy={cy+dy} r={pr}
+        fill={primary} opacity={op - i*0.03} />
+    ))
+  }
 
-  const petals = flowers.flatMap((f, fi) => [
-    { sx: f.x, sy: f.y, dx: -6 - fi,   dur: 3.8 + fi*0.3, delay: fi*0.6 },
-    { sx: f.x, sy: f.y, dx:  5 + fi*2, dur: 4.2 + fi*0.2, delay: fi*0.6 + 1.4 },
-  ])
+  // 垂れ枝の定義（メイン枝上の起点 sx,sy → 先端 ex,ey）
+  const hangBranches = R ? [
+    { sx:15,sy:12, ex:10,ey:38, clusters:[{cx:8, cy:44,r:9},{cx:16,cy:52,r:7}] },
+    { sx:35,sy:10, ex:28,ey:42, clusters:[{cx:24,cy:48,r:10},{cx:34,cy:56,r:8},{cx:18,cy:58,r:7}] },
+    { sx:55,sy:12, ex:50,ey:50, clusters:[{cx:46,cy:56,r:9},{cx:58,cy:62,r:8},{cx:40,cy:64,r:6}] },
+    { sx:75,sy:15, ex:70,ey:55, clusters:[{cx:66,cy:60,r:8},{cx:76,cy:66,r:7}] },
+  ] : [
+    { sx:85,sy:12, ex:90,ey:38, clusters:[{cx:92,cy:44,r:9},{cx:84,cy:52,r:7}] },
+    { sx:65,sy:10, ex:72,ey:42, clusters:[{cx:76,cy:48,r:10},{cx:66,cy:56,r:8},{cx:82,cy:58,r:7}] },
+    { sx:45,sy:12, ex:50,ey:50, clusters:[{cx:54,cy:56,r:9},{cx:42,cy:62,r:8},{cx:60,cy:64,r:6}] },
+    { sx:25,sy:15, ex:30,ey:55, clusters:[{cx:34,cy:60,r:8},{cx:24,cy:66,r:7}] },
+  ]
 
-  const mainPath = flip
-    ? `M -5 -2 Q 20 22 38 42 Q 55 60 75 82 Q 85 90 95 100`
-    : `M 105 -2 Q 80 22 62 42 Q 45 60 25 82 Q 15 90 5 100`
+  // 落下花びら（各クラスターの中心から）
+  const petals = hangBranches.flatMap((b, bi) =>
+    b.clusters.flatMap((c, ci) => [
+      { x: c.cx, y: c.cy + c.r * 0.8, dx: R ? 8+ci*5 : -8-ci*5, dur: 4+bi*0.5+ci*0.4, delay: bi*0.8+ci*1.2 },
+      { x: c.cx, y: c.cy + c.r * 0.5, dx: R ? -5-bi  :  5+bi,   dur: 3.6+bi*0.4,       delay: bi*0.8+ci*1.2+2 },
+    ])
+  )
 
   return (
     <div style={{ width:'100%', height:'100%', position:'relative', overflow:'hidden' }}>
       <svg style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%' }}
         viewBox="0 0 100 100" fill="none" preserveAspectRatio="xMidYMid meet">
 
-        {/* メイン枝 */}
-        <path d={mainPath} stroke={secondary} strokeWidth="1.8"
-          strokeLinecap="round" fill="none" opacity="0.5"/>
+        {/* メイン横枝 */}
+        <path
+          d={ R
+            ? `M 105 18 Q 70 14 45 12 Q 20 10 -5 8`
+            : `M -5 18 Q 30 14 55 12 Q 80 10 105 8`
+          }
+          stroke={secondary} strokeWidth="3.5" strokeLinecap="round" fill="none" opacity="0.55"/>
 
-        {/* 各花の小枝＋花 */}
-        {flowers.map((f, i) => {
-          const bx = flip ? f.x + 8 + i%2*4 : f.x - 8 - i%2*4
-          const by = f.y - 10 - i%2*3
-          return (
-            <g key={i}>
-              {/* 小枝 */}
-              <path d={`M${f.x} ${f.y} Q${(f.x+bx)/2} ${(f.y+by)/2-4} ${bx} ${by}`}
-                stroke={secondary} strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.4"/>
-              {/* 花5枚 */}
-              {[0,72,144,216,288].map(a => {
-                const r = 4
-                const px = bx + r * Math.cos(a * Math.PI/180)
-                const py = by + r * Math.sin(a * Math.PI/180)
-                return <ellipse key={a} cx={px} cy={py} rx="2.2" ry="1.6"
-                  fill={primary} opacity="0.7" transform={`rotate(${a} ${px} ${py})`}/>
-              })}
-              {/* 花芯 */}
-              <circle cx={bx} cy={by} r="1.2" fill={secondary} opacity="0.8"/>
-            </g>
-          )
-        })}
+        {/* 垂れ枝＋クラスター */}
+        {hangBranches.map((b, i) => (
+          <g key={i}>
+            {/* 垂れ枝本体 */}
+            <path d={`M${b.sx} ${b.sy} Q${b.sx+(R?-4:4)} ${(b.sy+b.ey)/2} ${b.ex} ${b.ey}`}
+              stroke={secondary} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.45"/>
+            {/* クラスターへの細枝 */}
+            {b.clusters.map((c, ci) => (
+              <path key={ci}
+                d={`M${b.ex} ${b.ey} Q${(b.ex+c.cx)/2} ${(b.ey+c.cy)/2-3} ${c.cx} ${c.cy}`}
+                stroke={secondary} strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.35"/>
+            ))}
+            {/* 花クラスター */}
+            {b.clusters.map((c, ci) => (
+              <g key={`fl-${ci}`}>{flowerCluster(c.cx, c.cy, c.r)}</g>
+            ))}
+          </g>
+        ))}
       </svg>
 
-      {/* 落下する花びら（枝の花と同じサイズ感） */}
+      {/* 落下花びら */}
       {petals.map((p, i) => (
         <motion.div key={i}
           style={{
             position: 'absolute',
-            left: `${p.sx}%`,
-            top:  `${p.sy}%`,
-            width: 5,
-            height: 4,
+            left: `${p.x}%`,
+            top:  `${p.y}%`,
+            width: 6, height: 5,
             background: primary,
-            borderRadius: '50% 0 50% 0',
-            opacity: 0.75,
+            borderRadius: '60% 0 60% 0',
+            opacity: 0.8,
           }}
           animate={{
-            y: ['0px', '380px'],
-            x: [0, p.dx * 12, p.dx * 6],
-            rotate: [0, (i%2===0?1:-1) * 270],
-            opacity: [0.75, 0.5, 0],
+            y: ['0px', '320px'],
+            x: [0, p.dx * 10, p.dx * 5],
+            rotate: [0, (i%2===0?1:-1) * 260],
+            opacity: [0.8, 0.5, 0],
           }}
           transition={{ duration: p.dur, repeat: Infinity, delay: p.delay, ease: 'easeIn' }}
         />
