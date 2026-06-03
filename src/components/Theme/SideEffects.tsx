@@ -215,74 +215,77 @@ function LofiSide({ primary, secondary }: { primary: string; secondary: string }
   )
 }
 
-// ---- Sakura: 斜め1本枝＋丸い花の塊＋落ちる花びら ----
+// ---- Sakura: 自然な斜め枝＋小さい花＋花びら落下 ----
 function SakuraSide({ primary, secondary, side }: { primary: string; secondary: string; side: 'left'|'right' }) {
-  // 左側：右上→左下方向、右側：左上→右下方向
-  const x1 = side === 'left' ? 110 : -10
-  const y1 = 5
-  const x2 = side === 'left' ? -10 : 110
-  const y2 = 75
+  // 左：右上隅から左下へ、右：左上隅から右下へ
+  const flip = side === 'right'
 
-  // 枝上の花の塊（t=0〜1で補間）
-  const clusters = [0.15, 0.32, 0.50, 0.65, 0.80].map(t => ({
-    x: x1 + (x2 - x1) * t,
-    y: y1 + (y2 - y1) * t,
-    r: 10 + Math.sin(t * 5) * 3,
-  }))
+  // 枝の花の位置（SVG 100x100座標）
+  const flowers = flip
+    ? [ {x:8,y:18}, {x:22,y:32}, {x:38,y:44}, {x:55,y:55}, {x:70,y:66} ]
+    : [ {x:92,y:18}, {x:78,y:32}, {x:62,y:44}, {x:45,y:55}, {x:30,y:66} ]
 
-  // 花びら発生源（各クラスターから）
-  const petals = clusters.flatMap((c, ci) => [
-    { x: c.x, y: c.y, dx: -15 - ci*3, dur: 3.5 + ci*0.4, delay: ci*0.6 },
-    { x: c.x, y: c.y, dx:  10 + ci*2, dur: 4.0 + ci*0.3, delay: ci*0.6 + 1.2 },
+  // 花びら落下（各花から）
+  const petals = flowers.flatMap((f, fi) => [
+    { sx: f.x, sy: f.y, dx: -8 - fi,   dur: 3.8 + fi*0.3, delay: fi*0.7 },
+    { sx: f.x, sy: f.y, dx:  6 + fi*2, dur: 4.2 + fi*0.2, delay: fi*0.7 + 1.5 },
   ])
+
+  const mainPath = flip
+    ? `M -5 5 Q 20 30 38 50 Q 55 65 75 90`
+    : `M 105 5 Q 80 30 62 50 Q 45 65 25 90`
 
   return (
     <div style={{ width:'100%', height:'100%', position:'relative', overflow:'hidden' }}>
-      <svg style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%' }} viewBox="0 0 100 100" fill="none" preserveAspectRatio="none">
-        {/* メインの枝 */}
-        <path
-          d={`M${x1} ${y1} Q${(x1+x2)/2 + (side==='left'?-8:8)} ${(y1+y2)/2 - 5} ${x2} ${y2}`}
-          stroke={secondary} strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.55"
-        />
-        {/* 小枝（各クラスターから短く伸びる） */}
-        {clusters.map((c, i) => (
-          <g key={i}>
-            <path
-              d={`M${c.x} ${c.y} Q${c.x + (i%2===0?8:-8)} ${c.y - 10} ${c.x + (i%2===0?14:-14)} ${c.y - 18}`}
-              stroke={secondary} strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.4"
-            />
-            {/* 花の塊（丸いシルエット） */}
-            <circle cx={c.x + (i%2===0?14:-14)} cy={c.y - 18} r={c.r} fill={primary} opacity="0.12"/>
-            {/* 花びら5枚 */}
-            {[0,72,144,216,288].map(a => {
-              const pr = c.r * 0.6
-              const px = (c.x + (i%2===0?14:-14)) + pr * Math.cos(a * Math.PI/180)
-              const py = (c.y - 18) + pr * Math.sin(a * Math.PI/180)
-              return <ellipse key={a} cx={px} cy={py} rx="3.5" ry="2.5"
-                fill={primary} opacity="0.6" transform={`rotate(${a} ${px} ${py})`}/>
-            })}
-            <circle cx={c.x + (i%2===0?14:-14)} cy={c.y - 18} r="2" fill={secondary} opacity="0.8"/>
-          </g>
-        ))}
+      <svg style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%' }}
+        viewBox="0 0 100 100" fill="none" preserveAspectRatio="xMidYMid meet">
+
+        {/* メイン枝 */}
+        <path d={mainPath} stroke={secondary} strokeWidth="1.8"
+          strokeLinecap="round" fill="none" opacity="0.5"/>
+
+        {/* 各花の小枝＋花 */}
+        {flowers.map((f, i) => {
+          const bx = flip ? f.x + 8 + i%2*4 : f.x - 8 - i%2*4
+          const by = f.y - 10 - i%2*3
+          return (
+            <g key={i}>
+              {/* 小枝 */}
+              <path d={`M${f.x} ${f.y} Q${(f.x+bx)/2} ${(f.y+by)/2-4} ${bx} ${by}`}
+                stroke={secondary} strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.4"/>
+              {/* 花5枚 */}
+              {[0,72,144,216,288].map(a => {
+                const r = 4
+                const px = bx + r * Math.cos(a * Math.PI/180)
+                const py = by + r * Math.sin(a * Math.PI/180)
+                return <ellipse key={a} cx={px} cy={py} rx="2.2" ry="1.6"
+                  fill={primary} opacity="0.7" transform={`rotate(${a} ${px} ${py})`}/>
+              })}
+              {/* 花芯 */}
+              <circle cx={bx} cy={by} r="1.2" fill={secondary} opacity="0.8"/>
+            </g>
+          )
+        })}
       </svg>
 
-      {/* 花びら：各クラスターから下へ */}
+      {/* 落下する花びら（枝の花と同じサイズ感） */}
       {petals.map((p, i) => (
         <motion.div key={i}
           style={{
-            position:'absolute',
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: 7 + i%3*2,
-            height: 5 + i%2,
+            position: 'absolute',
+            left: `${p.sx}%`,
+            top:  `${p.sy}%`,
+            width: 5,
+            height: 4,
             background: primary,
             borderRadius: '50% 0 50% 0',
+            opacity: 0.75,
           }}
           animate={{
-            y: ['0px', '450px'],
-            x: [0, p.dx * 4, p.dx * 2],
-            rotate: [0, (i%2===0 ? 1:-1) * 320],
-            opacity: [0.8, 0.5, 0],
+            y: ['0px', '380px'],
+            x: [0, p.dx * 12, p.dx * 6],
+            rotate: [0, (i%2===0?1:-1) * 270],
+            opacity: [0.75, 0.5, 0],
           }}
           transition={{ duration: p.dur, repeat: Infinity, delay: p.delay, ease: 'easeIn' }}
         />
