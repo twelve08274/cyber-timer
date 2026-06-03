@@ -1,4 +1,5 @@
 import { useTimerStore } from '../../stores/timerStore'
+import { useThemeStore } from '../../stores/themeStore'
 import { playStart, playReset } from '../../hooks/useSound'
 
 const btnBase: React.CSSProperties = {
@@ -15,6 +16,7 @@ const btnBase: React.CSSProperties = {
 
 export function TimerControls() {
   const { status, start, pause, reset, skip } = useTimerStore()
+  const t = useThemeStore(s => s.theme)()
 
   const handleStart = () => { playStart(); start() }
   const handleReset = () => { playReset(); reset() }
@@ -22,18 +24,18 @@ export function TimerControls() {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 28 }}>
       {status === 'running' ? (
-        <button onClick={pause} style={{ ...btnBase, borderColor: '#00f5ff', color: '#00f5ff', background: 'rgba(0,245,255,0.1)', boxShadow: '0 0 12px rgba(0,245,255,0.2)' }}>
+        <button onClick={pause} style={{ ...btnBase, borderColor: t.primary, color: t.primary, background: `${t.primary}1a`, boxShadow: `0 0 12px ${t.primary}33` }}>
           ⏸ PAUSE
         </button>
       ) : (
-        <button onClick={handleStart} style={{ ...btnBase, borderColor: '#00f5ff', color: '#00f5ff', background: 'rgba(0,245,255,0.1)', boxShadow: '0 0 12px rgba(0,245,255,0.2)' }}>
+        <button onClick={handleStart} style={{ ...btnBase, borderColor: t.primary, color: t.primary, background: `${t.primary}1a`, boxShadow: `0 0 12px ${t.primary}33` }}>
           ▶ START
         </button>
       )}
-      <button onClick={handleReset} style={{ ...btnBase, borderColor: '#1e2d50', color: '#5a6a8a' }}>
+      <button onClick={handleReset} style={{ ...btnBase, borderColor: t.border, color: t.textDim }}>
         ↺ RESET
       </button>
-      <button onClick={skip} style={{ ...btnBase, borderColor: '#1e2d50', color: '#5a6a8a' }}>
+      <button onClick={skip} style={{ ...btnBase, borderColor: t.border, color: t.textDim }}>
         ⏭ SKIP
       </button>
     </div>

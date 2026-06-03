@@ -22,6 +22,8 @@ interface TimerState {
   tick: () => void
   setType: (type: TimerType) => void
   setFocusDuration: (min: number) => void
+  setBreakDuration: (min: number) => void
+  setLongBreakDuration: (min: number) => void
 }
 
 const FOCUS = 25 * 60
@@ -81,4 +83,8 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     const secs = min * 60
     set({ focusDuration: min, remaining: secs, total: secs, status: 'idle' })
   },
+
+  setBreakDuration: (min) => set({ breakDuration: min }),
+
+  setLongBreakDuration: (min) => set({ longBreakDuration: min }),
 }))

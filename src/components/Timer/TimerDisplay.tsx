@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { useTimerStore } from '../../stores/timerStore'
+import { useThemeStore } from '../../stores/themeStore'
 
 function pad(n: number) {
   return String(n).padStart(2, '0')
@@ -19,10 +20,16 @@ const MODE_COLORS = {
 
 export function TimerDisplay() {
   const { remaining, total, mode, session } = useTimerStore()
+  const t = useThemeStore(s => s.theme)()
   const mins = Math.floor(remaining / 60)
   const secs = remaining % 60
   const progress = total > 0 ? (total - remaining) / total : 0
-  const color = MODE_COLORS[mode]
+  const modeColors = {
+    focus:     t.primary,
+    break:     t.secondary,
+    longBreak: t.accent,
+  }
+  const color = modeColors[mode]
 
   return (
     <div style={{ textAlign: 'center' }}>
